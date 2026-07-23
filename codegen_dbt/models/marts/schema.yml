@@ -1,0 +1,134 @@
+# models/marts/schema.yml
+version: 2
+
+models:
+
+  # ─── Staging ──────────────────────────────────────────────────────────────
+  - name: stg_employees
+    description: >
+      Cleaned and typed staging layer sourced from the raw employees table.
+      One row per employee.
+    columns:
+      - name: employee_id
+        description: Surrogate / natural primary key for each employee.
+        tests:
+          - not_null
+          - unique
+      - name: email
+        description: Corporate e-mail address — must be unique across employees.
+        tests:
+          - not_null
+          - unique
+      - name: hire_date
+        description: Date the employee was formally hired.
+        tests:
+          - not_null
+      - name: salary
+        description: Current annual salary in base currency.
+        tests:
+          - not_null
+      - name: is_active
+        description: Boolean flag — true while the employee is currently active.
+        tests:
+          - not_null
+
+  # ─── Intermediate ─────────────────────────────────────────────────────────
+  - name: int_employees_enriched
+    description: >
+      Enriched employee records; adds derived fields (full_name,
+      years_at_company, salary_band) on top of the staging model.
+    columns:
+      - name: employee_id
+        description: Primary key — inherited from staging.
+        tests:
+          - not_null
+          - unique
+      - name: full_name
+        description: Concatenated first + last name.
+        tests:
+          - not_null
+      - name: years_at_company
+        description: Whole years elapsed since hire_date as of the run date.
+        tests:
+          - not_null
+      - name: salary_band
+        description: "Bucketed salary tier, e.g. Band 1 / Band 2 / Band 3."
+        tests:
+          - not_null
+
+  # ─── Marts ────────────────────────────────────────────────────────────────
+  - name: mart_employees
+    description: >
+      Wide, analytics-ready employee mart.  Joins the enriched employee grain
+      with department-level aggregates and adds a within-department salary
+      comparison.  Materialized as a table for BI tool performance.
+    columns:
+      - name: employee_id
+        description: Primary key — one row per employee.
+        tests:
+          - not_null
+          - unique
+      - name: manager_id
+        description: >
+          employee_id of this employee's direct manager.
+          Nullable for top-level / CEO employees.
+      - name: full_name
+        description: Full display name of the employee.
+        tests:
+          - not_null
+      - name: email
+        description: Corporate e-mail address.
+        tests:
+          - not_null
+          - unique
+      - name: department
+        description: Business department the employee belongs to.
+        tests:
+          - not_null
+      - name: job_title
+        description: Employee's current job title.
+        tests:
+          - not_null
+      - name: salary
+        description: Annual salary in base currency.
+        tests:
+          - not_null
+      - name: salary_band
+        description: Bucketed salary tier derived in the intermediate model.
+        tests:
+          - not_null
+      - name: hire_date
+        description: Date the employee was formally hired.
+        tests:
+          - not_null
+      - name: years_at_company
+        description: Whole years since hire_date as of the dbt run date.
+        tests:
+          - not_null
+      - name: is_active
+        description: Boolean — true while the employee is currently active.
+        tests:
+          - not_null
+      - name: dept_headcount
+        description: >
+          Number of active employees in the same department at run time.
+        tests:
+          - not_null
+      - name: dept_avg_salary
+        description: >
+          Average salary across all active employees in the department.
+        tests:
+          - not_null
+      - name: dept_min_salary
+        description: Minimum salary across all active employees in the department.
+        tests:
+          - not_null
+      - name: dept_max_salary
+        description: Maximum salary across all active employees in the department.
+        tests:
+          - not_null
+      - name: pct_diff_from_dept_avg
+        description: >
+          Percentage difference between this employee's salary and the
+          department average: (salary − dept_avg) / dept_avg × 100.
+          Positive values mean above average; negative means below.
