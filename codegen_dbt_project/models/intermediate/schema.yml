@@ -1,0 +1,72 @@
+# models/intermediate/schema.yml  ← ADD this new file
+
+version: 2
+
+models:
+  - name: int_employees_enriched
+    description: >
+      Intermediate model that self-joins stg_employees to resolve each
+      employee's manager name, and computes a tenure_years derived column.
+      Serves as the single enriched employee grain for downstream marts.
+    columns:
+      - name: employee_id
+        description: "Primary key – unique identifier for each employee."
+        tests:
+          - not_null
+          - unique
+
+      - name: first_name
+        description: "Employee's first name."
+        tests:
+          - not_null
+
+      - name: last_name
+        description: "Employee's last name."
+        tests:
+          - not_null
+
+      - name: email
+        description: "Employee's email address."
+        tests:
+          - not_null
+          - unique
+
+      - name: phone_number
+        description: "Employee's contact phone number."
+
+      - name: hire_date
+        description: "Date the employee was hired."
+        tests:
+          - not_null
+
+      - name: job_id
+        description: "Foreign key to the jobs dimension."
+
+      - name: salary
+        description: "Employee's current salary."
+
+      - name: department_id
+        description: "Foreign key to the departments dimension."
+
+      - name: manager_id
+        description: "Foreign key referencing the manager's employee_id (nullable for top-level employees)."
+
+      - name: manager_first_name
+        description: "Resolved first name of the employee's manager (null if no manager)."
+
+      - name: manager_last_name
+        description: "Resolved last name of the employee's manager (null if no manager)."
+
+      - name: manager_email
+        description: "Resolved email of the employee's manager (null if no manager)."
+
+      - name: tenure_years
+        description: "Whole years elapsed between hire_date and today."
+        tests:
+          - not_null
+
+      - name: created_at
+        description: "Timestamp when the record was created."
+
+      - name: updated_at
+        description: "Timestamp when the record was last updated."

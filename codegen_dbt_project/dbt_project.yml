@@ -1,9 +1,9 @@
-name: 'codegen_dbt'
+name: 'codegen_dbt_project'
 version: '1.0.0'
 config-version: 2
 
 # The dbt Runner rewrites this to its generated profile at run time.
-profile: 'codegen_dbt'
+profile: 'codegen_dbt_project'
 
 model-paths: ["models"]
 seed-paths: ["seeds"]
@@ -13,7 +13,7 @@ test-paths: ["tests"]
 
 # Add your model configs here, e.g.:
 # models:
-#   codegen_dbt:
+#   codegen_dbt_project:
 #     staging:
 #       +materialized: view
 #     marts:
