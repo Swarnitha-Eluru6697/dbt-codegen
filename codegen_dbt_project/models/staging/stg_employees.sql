@@ -14,22 +14,13 @@ renamed as (
 
     select
         -- keys
-        employee_id,
-        job_id,
-        manager_id,
-        department_id,
-
-        -- contact info
-        email,
-        phone_number,
+        emp_id,
+        
 
         -- employment details
-        hire_date,
+        joining_date,
         salary,
 
-        -- metadata
-        created_at,
-        updated_at
 
     from source
 
