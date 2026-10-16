@@ -1,0 +1,143 @@
+# InaiEra agent: Showcase 4 — Transforms
+# Exported 2026-10-16 05:58 UTC — DSL v1
+dsl_version: '1'
+name: Showcase 4 — Transforms
+subtype: Workflow
+type: App
+app_type: workflow
+description: code (on a fail branch), docextractor, list_operator, template, aggregator.
+flow:
+  edges:
+  - id: e-n1-n2
+    source: n1
+    target: n2
+  - id: e-n2-n3
+    source: n2
+    target: n3
+  - id: e-n3-n4
+    source: n3
+    target: n4
+  - id: e-n4-n5-success
+    source: n4
+    target: n5
+    source_handle: success
+  - id: e-n4-n6b-error
+    source: n4
+    target: n6b
+    source_handle: error
+  - id: e-n5-n6
+    source: n5
+    target: n6
+  - id: e-n6-n7
+    source: n6
+    target: n7
+  - id: e-n6b-n7
+    source: n6b
+    target: n7
+  - id: e-n7-n8
+    source: n7
+    target: n8
+  - id: e-n8-n9
+    source: n8
+    target: n9
+  nodes:
+  - x: 40
+    y: 240
+    id: n1
+    type: trigger
+    config:
+      fields:
+      - id: fd
+        name: document
+        type: single_file
+        required: true
+        hidden_prefilled: false
+      trigger_type: user_input
+  - x: 200
+    y: 240
+    id: n2
+    type: gov
+    config:
+      enabled: true
+  - x: 360
+    y: 240
+    id: n3
+    type: docextractor
+    config:
+      mode: single
+      input_var: '{{document}}'
+  - x: 520
+    y: 240
+    id: n4
+    type: code
+    config:
+      code: 'text = vars.get(''docextractor_text'') or ''''
+
+        rows = [l.strip() for l in text.splitlines() if l.strip()]
+
+        result = [{''line'': l, ''length'': len(l)} for l in rows]'
+      output_name: lines
+      error_handling: Fail branch
+  - x: 700
+    y: 160
+    id: n5
+    type: list_operator
+    config:
+      sort:
+        property: length
+        direction: desc
+      limit: 5
+      filters:
+      - value: 20
+        operator: greater_than
+        property: length
+      input_var: '{{lines}}'
+  - x: 880
+    y: 160
+    id: n6
+    type: template
+    config:
+      template: 'Longest lines:
+
+        {% for r in result %}- {{ r.line }}
+
+        {% endfor %}'
+  - x: 880
+    y: 340
+    id: n6b
+    type: template
+    config:
+      template: 'Code step unavailable, so this is the raw extracted text:
+
+
+        {{docextractor_text}}'
+  - x: 1060
+    y: 240
+    id: n7
+    type: aggregator
+    config:
+      groups:
+      - variables:
+        - '{{template_output}}'
+        - '{{docextractor_text}}'
+        output_name: digest
+  - x: 1207.0
+    y: 333.0
+    id: n8
+    type: output
+    config:
+      variables:
+      - expr: '{{digest}}'
+        name: digest
+      - expr: '{{result}}'
+        name: top_lines
+      - expr: '{{first_record}}'
+        name: first_line
+      - expr: '{{docextractor_bytes}}'
+        name: extracted_chars
+  - x: 1320
+    y: 240
+    id: n9
+    type: respond
+    config:
+      format: json
