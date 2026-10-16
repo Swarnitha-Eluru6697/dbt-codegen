@@ -1,0 +1,182 @@
+# InaiEra agent: Node Test A — Q&A Routing
+# Exported 2026-10-16 05:54 UTC — DSL v1
+dsl_version: '1'
+name: Node Test A — Q&A Routing
+subtype: Workflow
+type: App
+app_type: workflow
+description: Classifier → Parameter Extractor → IF/ELSE → Knowledge Retrieval | Tool → LLM → Template
+  → Answer → Output → Respond.
+flow:
+  edges:
+  - id: e-n1-n2
+    source: n1
+    target: n2
+  - id: e-n2-n3
+    source: n2
+    target: n3
+  - id: e-n3-n4
+    source: n3
+    target: n4
+  - id: e-n4-n5
+    source: n4
+    target: n5
+  - id: e-n5-n6-true
+    source: n5
+    target: n6
+    source_handle: 'true'
+  - id: e-n5-n7-false
+    source: n5
+    target: n7
+    source_handle: 'false'
+  - id: e-n6-n8
+    source: n6
+    target: n8
+  - id: e-n7-n8
+    source: n7
+    target: n8
+  - id: e-n8-n9
+    source: n8
+    target: n9
+  - id: e-n9-n10
+    source: n9
+    target: n10
+  - id: e-n10-n11
+    source: n10
+    target: n11
+  - id: e-n11-n12
+    source: n11
+    target: n12
+  nodes:
+  - x: 40
+    y: 240
+    id: n1
+    type: trigger
+    config:
+      fields:
+      - id: f_question
+        name: question
+        type: paragraph
+        required: false
+        hidden_prefilled: false
+      trigger_type: webhook
+      webhook_token: 25b88aa3-1fbc-4f82-a984-d39d43f173ff
+  - x: 200
+    y: 240
+    id: n2
+    type: gov
+    config:
+      enabled: true
+  - x: 360
+    y: 240
+    id: n3
+    type: classifier
+    config:
+      model: Claude Haiku 4.5
+      class1: SECURITY
+      class2: SALES
+      input_var: '{{question}}'
+      instruction: 'SECURITY: security controls, encryption, access, third parties, compliance. SALES:
+        revenue, sales figures, quarters. Reply with the class name only.'
+  - x: 520
+    y: 240
+    id: n4
+    type: parameter_extractor
+    config:
+      model: Claude Haiku 4.5
+      input_var: '{{question}}'
+      parameters:
+      - name: control_id
+        type: string
+        required: false
+        description: A control id such as SEC-201, if named
+      - name: period
+        type: string
+        required: false
+        description: A time period such as 'last month', if named
+      instruction: Extract the parameters. Use null for anything not stated.
+      inference_mode: function_call
+  - x: 680
+    y: 240
+    id: n5
+    type: condition
+    config:
+      expression: '{{class_name}} == ''SECURITY'''
+  - x: 860
+    y: 140
+    id: n6
+    type: retrieval
+    config:
+      top_k: 3
+      query_var: '{{question}}'
+      knowledge_bases:
+      - semantic_docs
+      metadata_filtering_mode: disabled
+  - x: 860
+    y: 340
+    id: n7
+    type: tool
+    config:
+      param_values:
+        json_data: '{"revenue_last_month": 125000, "revenue_this_quarter": 410000, "currency": "USD"}'
+        json_filter: $
+      catalog_object: tool:JSON Process:JSON Parse
+  - x: 1040
+    y: 240
+    id: n8
+    type: llm
+    config:
+      model: llama-3-70b-instruct
+      timeout_s: 60
+      user_prompt: 'Question: {{question}}
+
+
+        Knowledge:
+
+        {{retrieved_chunks}}
+
+
+        Sales data: {{tool_output}}'
+      system_prompt: Answer ONLY from the knowledge and sales data supplied. If they do not contain the
+        answer, reply starting with 'NOT IN DATA' and do not guess.
+  - x: 1200
+    y: 240
+    id: n9
+    type: template
+    config:
+      template: 'Route: {{class_name}} | Control: {{control_id}} | Period: {{period}}'
+  - x: 1360
+    y: 240
+    id: n10
+    type: answer
+    config:
+      content: '{{template_output}}
+
+
+        {{llm_output}}'
+  - x: 1520
+    y: 240
+    id: n11
+    type: output
+    config:
+      variables:
+      - expr: '{{class_name}}'
+        name: route
+      - expr: '{{control_id}}'
+        name: control_id
+      - expr: '{{period}}'
+        name: period
+      - expr: '{{__is_success}}'
+        name: extractor_ok
+      - expr: '{{retrieval_source}}'
+        name: sources
+      - expr: '{{tool_output}}'
+        name: sales_data
+      - expr: '{{template_output}}'
+        name: header
+  - x: 1680
+    y: 240
+    id: n12
+    type: respond
+    config:
+      format: markdown
